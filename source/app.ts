@@ -1,5 +1,4 @@
 import express from 'express'
-// import axios from 'axios'
 import puppeteer from 'puppeteer'
 
 import { Entry, Training } from './entities'
@@ -27,69 +26,151 @@ app.get('/resources', async (request, response) => {
   const resources = {
     types: types.split(','),
     topics: topics.split(','),
-    where: where || 'all',
+    where: where || 'online',
     difficulty: difficulty ? difficulty.split(',') : 'all',
-    language: language || 'all',
+    language: language || 'english',
     entries: [] as Entry[],
     trainings: [] as Training[]
   }
 
   if (types) {
-    // if (types!!.includes('trainings')) {
-    //   let languageCode = ''
+    if (types!!.includes('trainings')) {
+      let languageCode = 'All'
 
-    //   switch (language) {
-    //     case 'english':
-    //       languageCode = '6'
-    //       break
-    //     case 'french':
-    //       languageCode = '34'
-    //       break
-    //     case 'spanish':
-    //       languageCode = '5'
-    //       break
-    //     default:
-    //       languageCode = 'All'
-    //       break
-    //   }
+      switch (language) {
+        case 'english':
+          languageCode = '6'
+          break
+        case 'french':
+          languageCode = '34'
+          break
+        case 'spanish':
+          languageCode = '5'
+          break
+      }
 
-    //   ;(topics as string).split(',').forEach(async (topic) => {
-    //     const { data } = await axios.post(
-    //       `https://terra-o-training.herokuapp.com/search//${topic}/1/${languageCode}`
-    //     )
-
-    //     resources.trainings.push(
-    //       data
-    //         .map(
-    //           (
-    //             training: Partial<Training> & {
-    //               link: string
-    //               trainingType: string
-    //             }
-    //           ) => {
-    //             return {
-    //               title: training.title,
-    //               image: training.image,
-    //               url: training.link,
-    //               type: training.trainingType,
-    //               level: training.level.toLowerCase(),
-    //               topic
-    //             }
-    //           }
-    //         )
-    //         .filter((training: Training) => training.level === difficulty)
-    //     )
-    //   })
-    // }
-
-    if (types!!.includes('entries')) {
       const browser = await puppeteer.launch({
-        // args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
       })
 
       const page = await browser.newPage()
 
-      topics.split(',').forEach(async (topic) => {
+      for (const topic of topics.split(',')) {
+        let topicCode = 'All'
+
+        switch (topic) {
+          case 'applied sciences':
+            topicCode = '138'
+            break
+          case 'urban development':
+            topicCode = '348'
+            break
+          case 'develop':
+            topicCode = '153'
+            break
+          case 'wildfires':
+            topicCode = '152'
+            break
+          case 'climate':
+            topicCode = '147'
+            break
+          case 'risk & resilience':
+            topicCode = '143'
+            break
+          case 'sdg':
+            topicCode = '149'
+            break
+          case 'socioeconomic assessments':
+            topicCode = '151'
+            break
+          case 'valuables':
+            topicCode = '150'
+            break
+          case 'capacity building':
+            topicCode = '13'
+            break
+          case 'disasters':
+            topicCode = '14'
+            break
+          case 'ecological forecasting':
+            topicCode = '15'
+            break
+          case 'agriculture':
+            topicCode = '16'
+            break
+          case 'health & air quality':
+            topicCode = '17'
+            break
+          case 'water resources':
+            topicCode = '18'
+            break
+          case 'group on earth observations':
+            topicCode = '105'
+            break
+          case 'prizes & challenges':
+            topicCode = '141'
+            break
+        }
+
+        await page.goto(
+          `https://appliedsciences.nasa.gov/join-mission/training?program_area=${topicCode}&languages=${languageCode}&source=All`
+        )
+
+        const trainings = (await page.evaluate(
+          (where, difficulty) => {
+            const list = Array.from(
+              document.querySelectorAll('.ds-list.layout-wrapper')
+            )
+
+            return list
+              .map((item: any) => {
+                const type = item
+                  .querySelector('.field--name-field-training-type a')
+                  .innerText.toLowerCase()
+                  .split(' ')[0]
+
+                if (type === 'online' && where === 'in-person') return null
+
+                const level = item
+                  .querySelector(
+                    'div.field.field--name-field-level.field--type-entity-reference.field--label-inline.clearfix > div.field__item'
+                  )
+                  .innerText.toLowerCase()
+
+                if (level !== difficulty) return null
+
+                return {
+                  title: item.querySelector('.field--name-node-title h2 a')
+                    .innerText,
+                  url: item.querySelector('.field--name-node-title h2 a').href,
+                  image: item.querySelector(
+                    '.field--name-field-featured-image img'
+                  ).src,
+                  type,
+                  level,
+                  date: item.querySelector(
+                    'div.field.field--name-field-start-and-end-date.field--type-daterange.field--label-inline.clearfix > div.field__item'
+                  ).innerText
+                }
+              })
+              .filter((item: any) => item !== null)
+          },
+          where,
+          difficulty
+        )) as Training[]
+
+        resources.trainings.push(...trainings)
+      }
+    }
+
+    if (types!!.includes('entries')) {
+      const browser = await puppeteer.launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      })
+
+      const page = await browser.newPage()
+
+      for (const topic of topics.split(',')) {
         await page.goto('https://eo4society.esa.int/search/' + topic)
 
         const esaResourcesImages = await page.evaluate(() => {
@@ -116,13 +197,15 @@ app.get('/resources', async (request, response) => {
           ).map((a) => a.getAttribute('href'))
         })
 
-        const esaResourcesDescriptions = Array.from(
-          document.querySelectorAll(
-            '.esa-resources > div > div.post-info-container > div.entry-summary > p'
-          )
-        ).map((p) => p.innerHTML)
+        const esaResourcesDescriptions = await page.evaluate(() => {
+          return Array.from(
+            document.querySelectorAll(
+              '.esa-resources > div > div.post-info-container > div.entry-summary > p'
+            )
+          ).map((p) => p.innerHTML)
+        })
 
-        for (const image in esaResourcesImages) {
+        for (const image of esaResourcesImages) {
           const index = esaResourcesImages.indexOf(image)
 
           resources.entries.push({
@@ -158,7 +241,7 @@ app.get('/resources', async (request, response) => {
           ).map((p) => p.getAttribute('innerHTML'))
         })
 
-        for (const title in esaProjectsTitles) {
+        for (const title of esaProjectsTitles) {
           const index = esaProjectsTitles.indexOf(title)
 
           resources.entries.push({
@@ -194,8 +277,10 @@ app.get('/resources', async (request, response) => {
           ).map((p) => p.getAttribute('innerHTML'))
         })
 
-        for (const image in esaPostsImages) {
+        for (const image of esaPostsImages) {
           const index = esaPostsImages.indexOf(image)
+
+          if (!esaPostsTitles[index] || !esaPostsUrls[index]) continue
 
           resources.entries.push({
             title: esaPostsTitles[index],
@@ -205,9 +290,9 @@ app.get('/resources', async (request, response) => {
             topic
           })
         }
-      })
+      }
 
-      // await browser.close()
+      await browser.close()
     }
 
     return response.json(resources)

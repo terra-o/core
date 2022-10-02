@@ -3,6 +3,7 @@ export interface Training {
   image: string
   url: string
   type: string
+  date: string
   level: string
   topic: string
 }
