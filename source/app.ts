@@ -1,9 +1,17 @@
 import express from 'express'
+import cors from 'cors'
 import puppeteer from 'puppeteer'
 
 import { Entry, Training } from './entities'
 
 const app = express()
+
+app.use(express.json())
+app.use(
+  cors({
+    origin: ['http://localhost:3000', 'https://terra-o.vercel.app']
+  })
+)
 
 app.get('/', (request, response) => {
   return response.json({ terra: 'o' })
@@ -298,9 +306,9 @@ app.get('/resources', async (request, response) => {
 
       await browser.close()
     }
-
-    return response.json(resources)
   }
+
+  return response.json(resources)
 })
 
 export { app }
