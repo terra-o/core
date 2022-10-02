@@ -5,6 +5,10 @@ import { Entry, Training } from './entities'
 
 const app = express()
 
+app.get('/', (request, response) => {
+  return response.json({ terra: 'o' })
+})
+
 app.get('/resources', async (request, response) => {
   const {
     query: { types, topics, where, difficulty, language }

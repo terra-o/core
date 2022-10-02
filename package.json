@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "build": "tsc && tsc-alias",
     "start": "node distribution/server.js",
     "start:dev": "ts-node -r tsconfig-paths/register source/server.ts",
     "dev": "ts-node-dev -r tsconfig-paths/register source/server.ts"
