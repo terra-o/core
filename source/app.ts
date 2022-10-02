@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import timeout from 'connect-timeout'
 import puppeteer from 'puppeteer'
 
 import { Entry, Training } from './entities'
@@ -12,6 +13,7 @@ app.use(
     origin: ['http://localhost:3000', 'https://terra-o.vercel.app']
   })
 )
+app.use(timeout('3600s'))
 
 app.get('/', (request, response) => {
   return response.json({ terra: 'o' })
