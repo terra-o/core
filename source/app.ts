@@ -130,6 +130,8 @@ app.get('/resources', async (request, response) => {
           `https://appliedsciences.nasa.gov/join-mission/training?program_area=${topicCode}&languages=${languageCode}&source=All`
         )
 
+        await page.waitForNetworkIdle()
+
         const trainings = (await page.evaluate(
           (where, difficulty) => {
             const list = Array.from(
@@ -173,7 +175,14 @@ app.get('/resources', async (request, response) => {
           difficulty
         )) as Training[]
 
-        resources.trainings.push(...trainings)
+        resources.trainings.push(
+          ...trainings.map((training) => {
+            return {
+              ...training,
+              topic
+            }
+          })
+        )
       }
     }
 
