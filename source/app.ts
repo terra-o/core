@@ -68,6 +68,7 @@ app.get('/resources', async (request, response) => {
       })
 
       const page = await browser.newPage()
+      page.setDefaultNavigationTimeout(0)
 
       for (const topic of topics.split(',')) {
         let topicCode = 'All'
@@ -192,6 +193,7 @@ app.get('/resources', async (request, response) => {
       })
 
       const page = await browser.newPage()
+      await page.setDefaultNavigationTimeout(0)
 
       for (const topic of topics.split(',')) {
         await page.goto('https://eo4society.esa.int/search/' + topic)
